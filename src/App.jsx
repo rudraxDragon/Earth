@@ -9,6 +9,46 @@ const ThreeScene = () => {
   const mountRef = useRef(null)
   const gitLink = "https://github.com/rudraxDragon"
   const [showControls, setShowControls] = useState(false)
+  const [showHelpDialog, setShowHelpDialog] = useState(false)
+
+  const closeHelpDialog = () => {
+    setShowHelpDialog(false)
+  }
+
+  const handleGlobalClick = (event) => {
+    if (showHelpDialog && event.target.classList.contains('help-dialog')) {
+      closeHelpDialog()
+    }
+  }
+  useEffect(() => {
+    if (showHelpDialog) {
+      document.addEventListener('click', handleGlobalClick)
+    }
+
+    return () => {
+      document.removeEventListener('click', handleGlobalClick)
+    }
+  }, [showHelpDialog])
+
+  const handleControlsClick = (event) => {
+    if (showControls &&
+      !event.target.closest('.controls-container') &&
+      !event.target.classList.contains('Heading')) {
+      setShowControls(false)
+    }
+  }
+  useEffect(() => {
+    // Add event listener when controls are shown
+    if (showControls) {
+      document.addEventListener('click', handleControlsClick)
+    }
+
+    // Cleanup the event listener
+    return () => {
+      document.removeEventListener('click', handleControlsClick)
+    }
+  }, [showControls])
+
 
   const cloudsMeshRef = useRef(null)
   const [showClouds, setShowClouds] = useState(true)
@@ -48,10 +88,10 @@ const ThreeScene = () => {
 
     const loadAssets = async () => {
       const textures = await Promise.all([
-        loadTexture("/earth_daymap.png", 0, 4),
-        loadTexture("/earth_nightmap.jpg", 1, 4),
-        loadTexture("/earthclouds.jpg", 2, 4),
-        loadTexture("/stars_milky_way.jpg", 3, 4),
+        loadTexture("images/earth_daymap.png", 0, 4),
+        loadTexture("images/earth_nightmap.jpg", 1, 4),
+        loadTexture("images/earthclouds.jpg", 2, 4),
+        loadTexture("images/stars_milky_way.jpg", 3, 4),
       ])
 
       const [dayTexture, nightTexture, cloudTexture, starTexture] = textures
@@ -92,7 +132,7 @@ const ThreeScene = () => {
       const controls = new OrbitControls(camera, renderer.domElement)
       controls.enableDamping = true
       controls.dampingFactor = 0.05
-      controls.minDistance = 1.1
+      controls.minDistance = 1.5
       controls.maxDistance = 5
       controls.target.set(0, 0, 0)
       controls.mouseButtons.RIGHT = null
@@ -112,6 +152,12 @@ const ThreeScene = () => {
 
     loadAssets()
   }, [])
+
+  useEffect(() => {
+    if (isLoaded) {
+      setShowHelpDialog(true)
+    }
+  }, [isLoaded])
 
   const toggleClouds = () => {
     if (cloudsMeshRef.current) {
@@ -162,21 +208,39 @@ const ThreeScene = () => {
 
       <div ref={mountRef} className="earth"></div>
 
-      {/* Navigation */}
       <div className="navigation">
         <h1 className="Heading" onClick={toggleControls}>पृथ्वी</h1>
         <div className="contacts">
-          <a href={gitLink}><img src="/me.jpg" alt="Photo of Rudraksh Prasad" className="profilePic" /></a>
+          <a href={gitLink}><img src="images/me.jpg" alt="Photo of Rudraksh Prasad" className="profilePic" /></a>
           <div className="nameAndLink">
             <h1 className="name">Rudraksh Prasad</h1>
             <hr />
-            <img src="/github.svg" alt="github logo" className="githubLogo" />
+            <img src="images/github.svg" alt="github logo" className="githubLogo" />
             <a href={gitLink} className="link">rudraxDragon</a>
           </div>
         </div>
       </div>
 
-      {/* Dropdown Controls */}
+
+      {showHelpDialog && (
+        <div className="help-dialog">
+          <div className="dialog-content">
+            <button className="close-btn" onClick={closeHelpDialog}>X</button>
+            <h2>How to Use the Controls</h2>
+            <p>Welcome to the Earth Sandbox! Here's how you can interact:</p>
+            <ul>
+              <li><strong>Click on "पृथ्वी" (Earth) at the top of the screen</strong> to reveal the control panel where you can toggle clouds, glow, and adjust speed.</li>
+              <li><strong>Clouds:</strong> Toggle clouds on/off by clicking the <strong>"Clouds: ON/OFF"</strong> button in the control panel below the Earth.</li>
+              <li><strong>Glow:</strong> Toggle the glow effect on/off by clicking the <strong>"Glow: ON/OFF"</strong> button in the same control panel.</li>
+              <li><strong>Speed:</strong> Adjust Earth's rotation speed by clicking the <strong>left (◀)</strong> and <strong>right (▶)</strong> arrows next to "Speed" in the control panel. Each click increases or decreases the rotation speed.</li>
+              <li><strong>Zoom:</strong> Use the mouse scroll wheel or drag with your fingers to zoom in and out. You can also use the <strong>OrbitControls</strong> (move around the Earth by dragging) to adjust your view.</li>
+            </ul>
+            <p className="footer"><strong>Click on पृथ्वी at the top to start interacting with the controls!</strong></p>
+          </div>
+        </div>
+      )}
+
+
       <div className={`controls-container ${showControls ? "show" : ""}`}>
         <div className="control-item">
           <span>Clouds:</span>
