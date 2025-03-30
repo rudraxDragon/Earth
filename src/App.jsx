@@ -7,6 +7,7 @@ import "./style.css"
 
 const ThreeScene = () => {
   const mountRef = useRef(null)
+  const earthMeshRef = useRef(null)
   const gitLink = "https://github.com/rudraxDragon"
   const [showControls, setShowControls] = useState(false)
   const [showHelpDialog, setShowHelpDialog] = useState(false)
@@ -38,12 +39,10 @@ const ThreeScene = () => {
     }
   }
   useEffect(() => {
-    // Add event listener when controls are shown
     if (showControls) {
       document.addEventListener('click', handleControlsClick)
     }
 
-    // Cleanup the event listener
     return () => {
       document.removeEventListener('click', handleControlsClick)
     }
@@ -56,11 +55,13 @@ const ThreeScene = () => {
   const glowMeshRef = useRef(null)
   const [showGlow, setShowGlow] = useState(true)
 
-  const speedRef = useRef(0.0003)
-  const [speedLevel, setSpeedLevel] = useState(3) // Default speed level
+  const speedRef = useRef(0.0004)
+  const [speedLevel, setSpeedLevel] = useState(4)
 
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [isLoaded, setIsLoaded] = useState(false)
+
+  const [showAxis, setShowAxis] = useState(true)
 
   useEffect(() => {
     const scene = new THREE.Scene()
@@ -99,6 +100,8 @@ const ThreeScene = () => {
       const earthGeometry = new THREE.SphereGeometry(1, 64, 64)
       const earthMaterial = getEarthShaderMaterial(dayTexture, nightTexture)
       const earthMesh = new THREE.Mesh(earthGeometry, earthMaterial)
+      earthMeshRef.current = earthMesh
+      earthMesh.rotation.x = THREE.MathUtils.degToRad(showAxis ? 23.5 : 0)
       scene.add(earthMesh)
 
       const cloudGeometry = new THREE.SphereGeometry(1.01, 64, 64)
@@ -159,6 +162,37 @@ const ThreeScene = () => {
     }
   }, [isLoaded])
 
+  const easeInOutCubic = (t) => {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+  }
+
+  useEffect(() => {
+    if (!earthMeshRef.current) return
+
+    const targetTilt = THREE.MathUtils.degToRad(showAxis ? 23.5 : 0)
+    const startTilt = earthMeshRef.current.rotation.x
+    let progress = 0
+    const duration = 0.5
+    const frameRate = 60
+    const totalFrames = duration * frameRate
+
+    const animateTilt = () => {
+      if (progress >= 1) {
+        earthMeshRef.current.rotation.x = targetTilt
+        return
+      }
+
+      progress += 1 / totalFrames
+      const easedProgress = easeInOutCubic(progress)
+      earthMeshRef.current.rotation.x = startTilt + (targetTilt - startTilt) * easedProgress
+
+      requestAnimationFrame(animateTilt)
+    };
+
+    animateTilt()
+  }, [showAxis])
+
+
   const toggleClouds = () => {
     if (cloudsMeshRef.current) {
       cloudsMeshRef.current.visible = !cloudsMeshRef.current.visible
@@ -189,6 +223,10 @@ const ThreeScene = () => {
 
   const toggleControls = () => {
     setShowControls((prev) => !prev)
+  }
+
+  const toggleAxis = () => {
+    setShowAxis((prev) => !prev)
   }
 
   return (
@@ -234,6 +272,7 @@ const ThreeScene = () => {
               <li><strong>Glow:</strong> Toggle the glow effect on/off by clicking the <strong>"Glow: ON/OFF"</strong> button in the same control panel.</li>
               <li><strong>Speed:</strong> Adjust Earth's rotation speed by clicking the <strong>left (◀)</strong> and <strong>right (▶)</strong> arrows next to "Speed" in the control panel. Each click increases or decreases the rotation speed.</li>
               <li><strong>Zoom:</strong> Use the mouse scroll wheel or drag with your fingers to zoom in and out. You can also use the <strong>OrbitControls</strong> (move around the Earth by dragging) to adjust your view.</li>
+        <li><strong>Axis:</strong> Click the <strong>"Axis: ON/OFF"</strong> button to toggle the 23.5° tilt axis line. This helps visualize Earth's tilt.</li>
             </ul>
             <p className="footer"><strong>Click on पृथ्वी at the top to start interacting with the controls!</strong></p>
           </div>
@@ -252,6 +291,12 @@ const ThreeScene = () => {
           <span>Glow:</span>
           <button className={`toggle-btn ${showGlow ? "" : "off"}`} onClick={toggleGlow}>
             {showGlow ? "ON" : "OFF"}
+          </button>
+        </div>
+        <div className="control-item">
+          <span>Axis:</span>
+          <button className={`toggle-btn ${showAxis ? "" : "off"}`} onClick={toggleAxis}>
+            {showAxis ? "ON" : "OFF"}
           </button>
         </div>
         <div className="control-item speed-control">
